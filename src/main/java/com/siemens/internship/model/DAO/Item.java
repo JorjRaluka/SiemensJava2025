@@ -1,20 +1,19 @@
-package com.siemens.internship;
+package com.siemens.internship.model.DAO;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.Email;
+import lombok.*;
 
 @Entity
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class Item {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -23,6 +22,8 @@ public class Item {
     private String description;
     private String status;
 
+
     // Add email regex validation
+    @Email(message="Email should be valid")
     private String email;
 }

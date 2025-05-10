@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ItemService {
@@ -37,13 +38,7 @@ public class ItemService {
 
 
     public List<ItemDTO> findAll() {
-        List<Item>items=itemRepository.findAll();
-        List<ItemDTO>itemDTOS=new ArrayList<>();
-        for(Item item:items){
-            ItemDTO itemDTO=convertToDTO(item);
-            itemDTOS.add(itemDTO);
-        }
-        return itemDTOS;
+        return itemRepository.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     public Optional<ItemDTO> findById(Long id) {

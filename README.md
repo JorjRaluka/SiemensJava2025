@@ -53,14 +53,14 @@ Description: Retrieves a specific item by its ID.
 POST /api/items
 
 Method: POST
-Payload: ItemDTO
+Payload: ItemDTO 
 Description: Creates a new item.
 
 
 POST /api/items/repeatable
 
 Method: POST
-Payload: ItemRepeatableDTO
+Payload: ItemRepeatableDTO 
 Description: Creates multiple copies of an item based on the given count.
 
 
@@ -88,6 +88,7 @@ Description: Asynchronously processes items in parallel threads and marks them a
 
 
 Service Documentation
+
 
 
 List<ItemDTO> findAll()
@@ -158,3 +159,4 @@ numberOfPartitions – int: The number of partitions (usually equal to the numbe
 Output: List<List<Long>> – A list of partitions, each containing a sublist of item IDs
 Description:
 Splits the provided list of item IDs into smaller sublists to distribute the workload among multiple threads. Ensures that each partition has a reasonable number of items and avoids empty or unevenly distributed partitions.
+

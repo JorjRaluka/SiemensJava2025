@@ -6,15 +6,18 @@ import com.siemens.internship.model.DAO.Item;
 import com.siemens.internship.model.DTO.ItemDTO;
 import com.siemens.internship.model.DTO.ItemRepeatableDTO;
 import com.siemens.internship.service.ItemService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -24,7 +27,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ItemController.class)
-public class ItemControllerTest {
+class ItemControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -35,44 +38,48 @@ public class ItemControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Test
-    void testCreateItem() throws Exception {
-        ItemDTO dto = new ItemDTO();
-        dto.setName("Test");
-        dto.setEmail("email@test.com");
+    private ItemDTO itemDTO;
+    private ItemRepeatableDTO itemRepeatableDTO;
+    private Item item;
 
-        when(service.save(any())).thenReturn(dto);
+    @BeforeEach
+    void setUp() {
+        itemDTO = new ItemDTO(null, "Name", "Desc", "NEW", null, "email@test.com");
+        itemRepeatableDTO = new ItemRepeatableDTO(itemDTO, 3);
+        item = new Item(1L, "Name", "Desc", "NEW", "email@test.com");
+    }
+
+    @Test
+    void shouldCreateItem() throws Exception {
+        when(service.save(any())).thenReturn(itemDTO);
 
         mockMvc.perform(post("/api/items")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+                        .content(objectMapper.writeValueAsString(itemDTO)))
                 .andExpect(status().isCreated());
     }
 
     @Test
-    void testCreateRepeatableItem() throws Exception {
-        ItemDTO dto = new ItemDTO(null, "Name", "Desc", "NEW", null, "email@test.com");
-        ItemRepeatableDTO repeatable = new ItemRepeatableDTO(dto, 3);
-
-        when(service.saveItemRepeatable(any())).thenReturn(dto);
+    void shouldCreateRepeatableItem() throws Exception {
+        when(service.saveItemRepeatable(any())).thenReturn(itemDTO);
 
         mockMvc.perform(post("/api/items/repeatable")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(repeatable)))
+                        .content(objectMapper.writeValueAsString(itemRepeatableDTO)))
                 .andExpect(status().isCreated());
     }
 
     @Test
-    void testGetItemById_Found() throws Exception {
-        Item item = new Item(1L, "Name", "Desc", "NEW", "email@test.com");
-        when(service.findById(1L)).thenReturn(Optional.of(item));
+    void shouldGetItemById_WhenFound() throws Exception {
+        when(service.findById(1L)).thenReturn(Optional.of(itemDTO));
 
         mockMvc.perform(get("/api/items/1"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Name"));
     }
 
     @Test
-    void testGetItemById_NotFound() throws Exception {
+    void shouldReturnNotFound_WhenItemNotFound() throws Exception {
         when(service.findById(1L)).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/items/1"))
@@ -80,9 +87,8 @@ public class ItemControllerTest {
     }
 
     @Test
-    void testUpdateItem_Success() throws Exception {
-        Item item = new Item(1L, "Updated", "Desc", "NEW", "email@test.com");
-        when(service.updateItem(eq(1L), any())).thenReturn(Optional.of(item));
+    void shouldUpdateItem_WhenFound() throws Exception {
+        when(service.updateItem(eq(1L), any())).thenReturn(Optional.of(itemDTO));
 
         mockMvc.perform(put("/api/items/1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -91,8 +97,7 @@ public class ItemControllerTest {
     }
 
     @Test
-    void testUpdateItem_NotFound() throws Exception {
-        Item item = new Item(1L, "Updated", "Desc", "NEW", "email@test.com");
+    void shouldReturnNotFound_WhenUpdatingNonExistentItem() throws Exception {
         when(service.updateItem(eq(1L), any())).thenReturn(Optional.empty());
 
         mockMvc.perform(put("/api/items/1")
@@ -102,35 +107,37 @@ public class ItemControllerTest {
     }
 
     @Test
-    void testDeleteItem_NotFound() throws Exception {
+    void shouldReturnNotFound_WhenDeletingNonExistentItem() throws Exception {
         when(service.existsById(1L)).thenReturn(false);
 
         mockMvc.perform(delete("/api/items/1"))
                 .andExpect(status().isNotFound());
     }
-    @Test
-    void testProcessItems() throws Exception {
-        List<Item> items = List.of(
-                new Item(1L, "Name", "Desc", "PROCESSED", "email@test.com"));
-        when(service.processItemsAsync()).thenReturn(CompletableFuture.completedFuture(items));
-
-        mockMvc.perform(get("/api/items/process"))
-                .andExpect(status().isOk());
-    }
-
-
 
     @Test
-    void testGetAllItems() throws Exception {
-        mockMvc.perform(get("/api/items"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void testDeleteItem() throws Exception {
+    void shouldDeleteItem_WhenExists() throws Exception {
         when(service.existsById(1L)).thenReturn(true);
 
         mockMvc.perform(delete("/api/items/1"))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void shouldProcessItems() throws Exception {
+        List<ItemDTO> processedItems = List.of(itemDTO);
+        when(service.processItemsAsync()).thenReturn(CompletableFuture.completedFuture(processedItems));
+
+        mockMvc.perform(get("/api/items/process"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Name"));
+    }
+
+    @Test
+    void shouldGetAllItems() throws Exception {
+        when(service.findAll()).thenReturn(Collections.singletonList(itemDTO));
+
+        mockMvc.perform(get("/api/items"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Name"));
     }
 }

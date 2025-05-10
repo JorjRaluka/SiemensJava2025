@@ -23,7 +23,7 @@ public class ItemController {
     private ItemService itemService;
 
     @GetMapping
-    public ResponseEntity<List<Item>> getAllItems() {
+    public ResponseEntity<List<ItemDTO>> getAllItems() {
         return new ResponseEntity<>(itemService.findAll(), HttpStatus.OK);
     }
 
@@ -46,35 +46,34 @@ public class ItemController {
 
 
     @GetMapping("/{id}")
-    public ResponseEntity<Item> getItemById(@PathVariable Long id) {
+    public ResponseEntity<ItemDTO> getItemById(@PathVariable Long id) {
         return itemService.findById(id)
                 .map(item -> new ResponseEntity<>(item, HttpStatus.OK))
                 .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Item> updateItem(@PathVariable Long id, @Valid @RequestBody Item item,BindingResult result) {
+    public ResponseEntity<ItemDTO> updateItem(@PathVariable Long id, @Valid @RequestBody Item item,BindingResult result) {
         if(result.hasErrors()){
             return new ResponseEntity<>(null,HttpStatus.BAD_REQUEST);
         }
         return itemService.updateItem(id, item)
-                .map(value-> new ResponseEntity<>(item,HttpStatus.OK))
+                .map(value-> new ResponseEntity<>(value,HttpStatus.OK))
                 .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
 
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteItem(@PathVariable Long id) {
+    public ResponseEntity<ItemDTO> deleteItem(@PathVariable Long id) {
         if(!itemService.existsById(id)){
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-
         }
         itemService.deleteById(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @GetMapping("/process")
-    public ResponseEntity<List<Item>> processItems() throws ExecutionException, InterruptedException {
+    public ResponseEntity<List<ItemDTO>> processItems() throws ExecutionException, InterruptedException {
         return new ResponseEntity<>(itemService.processItemsAsync().get(), HttpStatus.OK);
     }
 }

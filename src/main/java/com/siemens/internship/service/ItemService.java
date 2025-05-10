@@ -32,21 +32,29 @@ public class ItemService {
     private static final int NUMBER_OF_THREADS = 10;
     private static ExecutorService executor = Executors.newFixedThreadPool(NUMBER_OF_THREADS);
 
-    private final List<Item> processedItems = new CopyOnWriteArrayList<>();
+    private final List<ItemDTO> processedItems = new CopyOnWriteArrayList<ItemDTO>();
     private int processedCount = 0;
 
 
-    public List<Item> findAll() {
-        return itemRepository.findAll();
+    public List<ItemDTO> findAll() {
+        List<Item>items=itemRepository.findAll();
+        List<ItemDTO>itemDTOS=new ArrayList<>();
+        for(Item item:items){
+            ItemDTO itemDTO=convertToDTO(item);
+            itemDTOS.add(itemDTO);
+        }
+        return itemDTOS;
     }
 
-    public Optional<Item> findById(Long id) {
-        return itemRepository.findById(id);
+    public Optional<ItemDTO> findById(Long id) {
+        return itemRepository.findById(id)
+                .map(item->convertToDTO(item));
     }
-    public Optional<Item>updateItem(Long id,Item updatedItem){
+    public Optional<ItemDTO>updateItem(Long id,Item updatedItem){
         return itemRepository.findById(id).map(existsById ->{
             updatedItem.setId(id);
-            return itemRepository.save(updatedItem);
+            Item savedItem=itemRepository.save(updatedItem);
+            return convertToDTO(savedItem);
         });
     }
     public boolean existsById(Long id) {
@@ -59,8 +67,10 @@ public class ItemService {
         return convertToDTO(savedItem);
     }
 
-    public void deleteById(Long id) {
+    public ItemDTO deleteById(Long id) {
+        Item item=itemRepository.findById(id).orElseThrow(()->new RuntimeException("Item not found"));
         itemRepository.deleteById(id);
+        return convertToDTO(item);
     }
 
 
@@ -74,13 +84,11 @@ public class ItemService {
             return partitions;
         }
 
-        int partitionSize = (int) Math.floor((double) totalItems / numberOfPartitions);
+        int partitionSize = Math.max(1, totalItems / numberOfPartitions);
 
-        for (int startIndex = 0; startIndex < totalItems; startIndex += partitionSize) {
-            int endIndex = Math.min(startIndex + partitionSize, totalItems);
-
-            List<Long> partition = items.subList(startIndex, endIndex);
-            partitions.add(partition);
+        for (int i = 0; i < totalItems; i += partitionSize) {
+            int end = Math.min(i + partitionSize, totalItems);
+            partitions.add(new ArrayList<>(items.subList(i, end)));
         }
 
         return partitions;
@@ -105,7 +113,7 @@ public class ItemService {
      * Consider the interaction between Spring's @Async and CompletableFuture
      */
     @Async
-    public CompletableFuture<List<Item>> processItemsAsync() {
+    public CompletableFuture<List<ItemDTO>> processItemsAsync() {
         List<Long> itemIds = itemRepository.findAllIds();
         List<CompletableFuture<Void>> futures = new ArrayList<>();
 
@@ -113,7 +121,7 @@ public class ItemService {
 
         for (List<Long> partition : partitions) {
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                List<Item> localProcessed = new ArrayList<>();
+                List<ItemDTO> localProcessed = new ArrayList<>();
 
                 for (Long id : partition) {
                     try {
@@ -132,7 +140,7 @@ public class ItemService {
                         ItemDTO itemDTO=convertToDTO(item);
                         itemDTO.setProcessedBy(Thread.currentThread().getName());
 
-                        localProcessed.add(item);
+                        localProcessed.add(itemDTO);
                     } catch (InterruptedException e) {
                         System.out.println("Error: " + e.getMessage());
                     }

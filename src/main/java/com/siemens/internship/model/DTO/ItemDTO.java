@@ -7,7 +7,6 @@ import jakarta.persistence.Id;
 import jakarta.validation.constraints.Email;
 import lombok.*;
 
-@Entity
 @Getter
 @Setter
 @AllArgsConstructor

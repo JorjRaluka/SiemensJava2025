@@ -1,10 +1,3 @@
-DOCUMENTATION:
-->Layers:
-1.Controller Layer:Item Controller
-2.Service Layer: ItemService
-3.Repository Layer: ItemRepository
-4.Model Layer:DAO-Item, DTO-ItemDTO,ItemRepeatableDTO
-
 Item:
 
 | Field         | Type   | Description                               |
